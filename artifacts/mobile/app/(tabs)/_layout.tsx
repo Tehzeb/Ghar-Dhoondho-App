@@ -20,6 +20,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "magnifyingglass", selected: "magnifyingglass" }} />
         <Label>Search</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="map">
+        <Icon sf={{ default: "map", selected: "map.fill" }} />
+        <Label>Map</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="post">
         <Icon sf={{ default: "plus.circle", selected: "plus.circle.fill" }} />
         <Label>Post</Label>
@@ -60,7 +64,7 @@ function ClassicTabLayout() {
           ) : isWeb ? (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
           ) : null,
-        tabBarLabelStyle: { fontSize: 11, fontFamily: "Inter_500Medium" },
+        tabBarLabelStyle: { fontSize: 10, fontFamily: "Inter_500Medium" },
       }}
     >
       <Tabs.Screen
@@ -68,7 +72,7 @@ function ClassicTabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="house" tintColor={color} size={24} /> : <Feather name="home" size={22} color={color} />,
+            isIOS ? <SymbolView name="house" tintColor={color} size={22} /> : <Feather name="home" size={21} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -76,7 +80,15 @@ function ClassicTabLayout() {
         options={{
           title: "Search",
           tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="magnifyingglass" tintColor={color} size={24} /> : <Feather name="search" size={22} color={color} />,
+            isIOS ? <SymbolView name="magnifyingglass" tintColor={color} size={22} /> : <Feather name="search" size={21} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: "Map",
+          tabBarIcon: ({ color }) =>
+            isIOS ? <SymbolView name="map" tintColor={color} size={22} /> : <Feather name="map" size={21} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -84,7 +96,7 @@ function ClassicTabLayout() {
         options={{
           title: "Post",
           tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="plus.circle" tintColor={color} size={24} /> : <Feather name="plus-circle" size={22} color={color} />,
+            isIOS ? <SymbolView name="plus.circle" tintColor={color} size={22} /> : <Feather name="plus-circle" size={21} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -92,7 +104,7 @@ function ClassicTabLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="person" tintColor={color} size={24} /> : <Feather name="user" size={22} color={color} />,
+            isIOS ? <SymbolView name="person" tintColor={color} size={22} /> : <Feather name="user" size={21} color={color} />,
         }}
       />
     </Tabs>
