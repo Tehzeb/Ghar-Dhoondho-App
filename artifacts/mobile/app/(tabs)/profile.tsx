@@ -6,6 +6,7 @@ import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
+import { useFavourites } from "@/context/FavouritesContext";
 import { useColors } from "@/hooks/useColors";
 
 const ROLE_COLORS: Record<string, string> = {
@@ -18,6 +19,7 @@ export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
+  const { favouriteIds } = useFavourites();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const handleLogout = () => {
@@ -34,7 +36,11 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const MenuItem = ({ icon, label, onPress, danger = false }: { icon: string; label: string; onPress: () => void; danger?: boolean }) => (
+  const MenuItem = ({
+    icon, label, onPress, danger = false, badge,
+  }: {
+    icon: string; label: string; onPress: () => void; danger?: boolean; badge?: number;
+  }) => (
     <TouchableOpacity
       style={[styles.menuItem, { borderBottomColor: colors.border }]}
       onPress={() => { Haptics.selectionAsync(); onPress(); }}
@@ -44,6 +50,11 @@ export default function ProfileScreen() {
         <Feather name={icon as any} size={18} color={danger ? colors.destructive : colors.primary} />
       </View>
       <Text style={[styles.menuLabel, { color: danger ? colors.destructive : colors.text }]}>{label}</Text>
+      {badge !== undefined && badge > 0 && (
+        <View style={[styles.badgePill, { backgroundColor: colors.primary }]}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      )}
       {!danger && <Feather name="chevron-right" size={18} color={colors.mutedForeground} />}
     </TouchableOpacity>
   );
@@ -81,7 +92,13 @@ export default function ProfileScreen() {
       </View>
 
       <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>My Account</Text>
+        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>My Activity</Text>
+        <MenuItem
+          icon="heart"
+          label="Saved Properties"
+          badge={favouriteIds.length}
+          onPress={() => router.push("/profile/saved")}
+        />
         <MenuItem icon="list" label="My Listings" onPress={() => router.push("/profile/listings")} />
         <MenuItem icon="bell" label="Notifications" onPress={() => router.push("/profile/notifications")} />
       </View>
@@ -117,5 +134,7 @@ const styles = StyleSheet.create({
   menuItem: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
   menuIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   menuLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium" },
+  badgePill: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, alignItems: "center", justifyContent: "center" },
+  badgeText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
   version: { textAlign: "center", fontSize: 12, fontFamily: "Inter_400Regular", paddingVertical: 16 },
 });

@@ -15,6 +15,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/context/AuthContext";
+import { FavouritesProvider } from "@/context/FavouritesContext";
 import { PropertiesProvider } from "@/context/PropertiesContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -35,6 +36,7 @@ function RootLayoutNav() {
       <Stack.Screen name="profile/notifications" options={{ headerShown: false }} />
       <Stack.Screen name="profile/privacy" options={{ headerShown: false }} />
       <Stack.Screen name="profile/help" options={{ headerShown: false }} />
+      <Stack.Screen name="profile/saved" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -63,7 +65,9 @@ export default function RootLayout() {
             <KeyboardProvider>
               <AuthProvider>
                 <PropertiesProvider>
-                  <RootLayoutNav />
+                  <FavouritesProvider>
+                    <RootLayoutNav />
+                  </FavouritesProvider>
                 </PropertiesProvider>
               </AuthProvider>
             </KeyboardProvider>

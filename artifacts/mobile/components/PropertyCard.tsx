@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import { useFavourites } from "@/context/FavouritesContext";
 import { Property } from "@/context/PropertiesContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -32,10 +33,18 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function PropertyCard({ property, compact = false }: Props) {
   const colors = useColors();
+  const { isFavourite, toggleFavourite } = useFavourites();
+  const fav = isFavourite(property.id);
 
   const onPress = () => {
     Haptics.selectionAsync();
     router.push(`/property/${property.id}`);
+  };
+
+  const onHeart = async (e: any) => {
+    e.stopPropagation?.();
+    Haptics.impactAsync(fav ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
+    await toggleFavourite(property.id);
   };
 
   const hasImage = property.images && property.images.length > 0;
@@ -63,10 +72,16 @@ export default function PropertyCard({ property, compact = false }: Props) {
             <Text style={[styles.compactPrice, { color: colors.primary }]}>
               PKR {formatPrice(property.price, property.listingType)}
             </Text>
-            <View style={[styles.badge, { backgroundColor: property.listingType === "sale" ? colors.primaryLight : "#FEF3C7" }]}>
-              <Text style={[styles.badgeText, { color: property.listingType === "sale" ? colors.primary : colors.accent }]}>
-                {property.listingType === "sale" ? "For Sale" : "For Rent"}
-              </Text>
+            <View style={styles.compactRight}>
+              <View style={[styles.badge, { backgroundColor: property.listingType === "sale" ? colors.primaryLight : "#FEF3C7" }]}>
+                <Text style={[styles.badgeText, { color: property.listingType === "sale" ? colors.primary : colors.accent }]}>
+                  {property.listingType === "sale" ? "For Sale" : "For Rent"}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={onHeart} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name={fav ? "heart" : "heart"} size={16} color={fav ? "#EF4444" : colors.mutedForeground}
+                  style={fav ? styles.heartFilled : undefined} />
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -98,6 +113,18 @@ export default function PropertyCard({ property, compact = false }: Props) {
             <Text style={[styles.featuredText, { color: colors.accent }]}>Featured</Text>
           </View>
         )}
+        <TouchableOpacity
+          style={[styles.heartBtn, { backgroundColor: fav ? "#FEF2F2" : "rgba(255,255,255,0.9)" }]}
+          onPress={onHeart}
+          activeOpacity={0.8}
+        >
+          <Feather
+            name="heart"
+            size={18}
+            color={fav ? "#EF4444" : "#64748B"}
+            style={fav ? styles.heartFilled : undefined}
+          />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.info}>
@@ -158,11 +185,18 @@ const styles = StyleSheet.create({
   },
   listingBadgeText: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
   featuredBadge: {
-    position: "absolute", top: 12, right: 12,
+    position: "absolute", top: 12, right: 52,
     flexDirection: "row", alignItems: "center", gap: 3,
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20,
   },
   featuredText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  heartBtn: {
+    position: "absolute", top: 10, right: 10,
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4, elevation: 2,
+  },
+  heartFilled: {},
   info: { padding: 14 },
   price: { fontSize: 20, fontFamily: "Inter_700Bold", marginBottom: 2 },
   title: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 4 },
@@ -185,6 +219,8 @@ const styles = StyleSheet.create({
   compactLocation: { fontSize: 12, fontFamily: "Inter_400Regular" },
   compactBottom: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   compactPrice: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  compactRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   badgeText: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  accent: {},
 });
