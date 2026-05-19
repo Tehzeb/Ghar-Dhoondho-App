@@ -1,7 +1,18 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-export type UserRole = "buyer" | "renter" | "seller";
+import {
+  type ApiUser,
+  apiGetAdminDashboard,
+  apiGetMe,
+  apiLogin,
+  apiRegister,
+  apiUpdateMe,
+  clearToken,
+  saveToken,
+} from "../lib/api";
+
+export type UserRole = "buyer" | "renter" | "seller" | "admin";
 
 export interface User {
   id: string;
@@ -13,9 +24,6 @@ export interface User {
   createdAt: string;
 }
 
-const ADMIN_EMAIL = "tehzeeb.x51214@gmail.com";
-const ADMIN_PASSWORD = "141161";
-const USERS_KEY = "ghardhoondo_users";
 const CURRENT_USER_KEY = "ghardhoondo_current_user";
 
 interface AuthContextType {
@@ -32,29 +40,41 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function apiUserToLocal(u: ApiUser): User {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    password: "",
+    role: u.role as UserRole,
+    phone: u.phone ?? "",
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
-
-  const loadUsers = useCallback(async () => {
-    const raw = await AsyncStorage.getItem(USERS_KEY);
-    if (raw) {
-      setAllUsers(JSON.parse(raw));
-    }
-  }, []);
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     (async () => {
       try {
-        const [currentRaw, usersRaw] = await Promise.all([
-          AsyncStorage.getItem(CURRENT_USER_KEY),
-          AsyncStorage.getItem(USERS_KEY),
-        ]);
-        if (currentRaw) setUser(JSON.parse(currentRaw));
-        if (usersRaw) setAllUsers(JSON.parse(usersRaw));
+        const cached = await AsyncStorage.getItem(CURRENT_USER_KEY);
+        if (cached) {
+          const parsed: User = JSON.parse(cached);
+          setUser(parsed);
+          try {
+            const { user: fresh } = await apiGetMe();
+            const updated = apiUserToLocal(fresh);
+            setUser(updated);
+            await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
+          } catch {
+            // keep cached user if token expired
+          }
+        }
       } finally {
         setIsLoading(false);
       }
@@ -62,77 +82,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const trimmedEmail = email.trim().toLowerCase();
-    if (trimmedEmail === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD) {
-      const adminUser: User = {
-        id: "admin",
-        name: "Admin",
-        email: ADMIN_EMAIL,
-        password: ADMIN_PASSWORD,
-        role: "seller",
-        phone: "",
-        createdAt: new Date().toISOString(),
-      };
-      setUser(adminUser);
-      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(adminUser));
+    try {
+      const { token, user: apiUser } = await apiLogin(email.trim(), password);
+      await saveToken(token);
+      const localUser = apiUserToLocal(apiUser);
+      setUser(localUser);
+      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(localUser));
       return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Login failed";
+      return { success: false, error: msg };
     }
-    const raw = await AsyncStorage.getItem(USERS_KEY);
-    const users: User[] = raw ? JSON.parse(raw) : [];
-    const found = users.find((u) => u.email.toLowerCase() === trimmedEmail && u.password === password);
-    if (!found) return { success: false, error: "Invalid email or password" };
-    setUser(found);
-    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(found));
-    return { success: true };
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string, phone: string, role: UserRole) => {
-    const trimmedEmail = email.trim().toLowerCase();
-    const raw = await AsyncStorage.getItem(USERS_KEY);
-    const users: User[] = raw ? JSON.parse(raw) : [];
-    if (users.find((u) => u.email.toLowerCase() === trimmedEmail)) {
-      return { success: false, error: "Email already registered" };
+    try {
+      const apiRole = (role === "admin" ? "buyer" : role) as "buyer" | "seller" | "renter";
+      const { token, user: apiUser } = await apiRegister(name, email.trim(), password, phone, apiRole);
+      await saveToken(token);
+      const localUser = apiUserToLocal(apiUser);
+      setUser(localUser);
+      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(localUser));
+      return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Registration failed";
+      return { success: false, error: msg };
     }
-    const newUser: User = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      name: name.trim(),
-      email: trimmedEmail,
-      password,
-      role,
-      phone: phone.trim(),
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [...users, newUser];
-    await AsyncStorage.setItem(USERS_KEY, JSON.stringify(updated));
-    setAllUsers(updated);
-    setUser(newUser);
-    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(newUser));
-    return { success: true };
   }, []);
 
   const logout = useCallback(async () => {
     setUser(null);
-    await AsyncStorage.removeItem(CURRENT_USER_KEY);
+    setAllUsers([]);
+    await Promise.all([clearToken(), AsyncStorage.removeItem(CURRENT_USER_KEY)]);
   }, []);
 
   const updateUser = useCallback(async (updates: Partial<User>) => {
     if (!user) return;
-    const updated = { ...user, ...updates };
-    setUser(updated);
-    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
-    const raw = await AsyncStorage.getItem(USERS_KEY);
-    const users: User[] = raw ? JSON.parse(raw) : [];
-    const idx = users.findIndex((u) => u.id === user.id);
-    if (idx >= 0) {
-      users[idx] = updated;
-      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
-      setAllUsers(users);
+    try {
+      const { user: updated } = await apiUpdateMe({
+        name: updates.name,
+        phone: updates.phone,
+        role: updates.role as "buyer" | "seller" | "renter" | undefined,
+      });
+      const localUpdated = apiUserToLocal(updated);
+      setUser(localUpdated);
+      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(localUpdated));
+    } catch {
+      const updated = { ...user, ...updates };
+      setUser(updated);
+      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
     }
   }, [user]);
 
   const refreshUsers = useCallback(async () => {
-    await loadUsers();
-  }, [loadUsers]);
+    if (!isAdmin) return;
+    try {
+      const dashboard = await apiGetAdminDashboard();
+      const users: User[] = dashboard.users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        password: "",
+        role: u.role as UserRole,
+        phone: u.phone ?? "",
+        createdAt: u.createdAt,
+      }));
+      setAllUsers(users);
+    } catch {
+      // silently fail
+    }
+  }, [isAdmin]);
 
   return (
     <AuthContext.Provider value={{ user, isAdmin, allUsers, isLoading, login, register, logout, updateUser, refreshUsers }}>

@@ -44,7 +44,7 @@ export default function PropertyCard({ property, compact = false }: Props) {
   const onHeart = async (e: any) => {
     e.stopPropagation?.();
     Haptics.impactAsync(fav ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
-    await toggleFavourite(property.id);
+    await toggleFavourite(property.id, property);
   };
 
   const hasImage = property.images && property.images.length > 0;

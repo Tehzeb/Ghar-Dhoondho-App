@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { seedDatabase } from "./seed";
 
 const rawPort = process.env["PORT"];
 
@@ -20,6 +21,6 @@ app.listen(port, (err) => {
     logger.error({ err }, "Error listening on port");
     process.exit(1);
   }
-
   logger.info({ port }, "Server listening");
+  seedDatabase().catch((e) => logger.error({ err: e }, "Seed error"));
 });

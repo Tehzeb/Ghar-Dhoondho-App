@@ -13,17 +13,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import PropertyCard from "@/components/PropertyCard";
 import { useFavourites } from "@/context/FavouritesContext";
-import { useProperties } from "@/context/PropertiesContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function SavedScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { favouriteIds, clearFavourites } = useFavourites();
-  const { properties } = useProperties();
+  const { savedProperties, clearFavourites } = useFavourites();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  const saved = properties.filter((p) => favouriteIds.includes(p.id));
+  const saved = savedProperties;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
