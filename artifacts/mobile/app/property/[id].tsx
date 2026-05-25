@@ -311,34 +311,31 @@ export default function PropertyDetailScreen() {
         </View>
       </ScrollView>
 
-      {!isOwner && (
-        <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background, paddingBottom: insets.bottom + 12 }]}>
-          <TouchableOpacity
-            style={[styles.msgBtn, { backgroundColor: canMessage ? colors.primaryLight : colors.muted, opacity: canMessage ? 1 : 0.5 }]}
-            onPress={handleMessage}
-            activeOpacity={0.85}
-            disabled={!canMessage}
-          >
-            <Feather name="message-circle" size={18} color={canMessage ? colors.primary : colors.mutedForeground} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.callBtn, { backgroundColor: "#22C55E" }]}
-            onPress={handleWhatsApp}
-            activeOpacity={0.85}
-          >
-            <Feather name="message-square" size={18} color="#fff" />
-            <Text style={styles.callBtnText}>WhatsApp</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.callBtn, { backgroundColor: colors.primary }]}
-            onPress={handleCall}
-            activeOpacity={0.85}
-          >
-            <Feather name="phone" size={18} color="#fff" />
-            <Text style={styles.callBtnText}>Call</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background, paddingBottom: insets.bottom + 12 }]}>
+        <TouchableOpacity
+          style={[styles.msgBtn, { backgroundColor: canMessage ? colors.primaryLight : colors.muted, opacity: canMessage ? 1 : 0.5 }]}
+          onPress={handleMessage}
+          activeOpacity={0.85}
+        >
+          <Feather name="message-circle" size={18} color={canMessage ? colors.primary : colors.mutedForeground} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.callBtn, { backgroundColor: "#22C55E" }]}
+          onPress={handleWhatsApp}
+          activeOpacity={0.85}
+        >
+          <Feather name="message-square" size={18} color="#fff" />
+          <Text style={styles.callBtnText}>WhatsApp</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.callBtn, { backgroundColor: colors.primary }]}
+          onPress={handleCall}
+          activeOpacity={0.85}
+        >
+          <Feather name="phone" size={18} color="#fff" />
+          <Text style={styles.callBtnText}>Call</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
