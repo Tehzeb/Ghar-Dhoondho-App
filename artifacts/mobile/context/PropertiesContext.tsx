@@ -29,6 +29,7 @@ export interface Property {
   size: string;
   ownerId: string;
   ownerName: string;
+  ownerAvatar: string;
   ownerPhone: string;
   createdAt: string;
   featured: boolean;
@@ -67,6 +68,7 @@ function apiToProperty(p: ApiProperty): Property {
     size: p.areaSize,
     ownerId: p.sellerId ?? "",
     ownerName: p.ownerName,
+    ownerAvatar: p.ownerAvatar ?? "",
     ownerPhone: p.ownerPhone,
     createdAt: p.createdAt,
     featured: p.featured,

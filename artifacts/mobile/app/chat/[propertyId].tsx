@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -19,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { type ApiMessage, apiGetMessages, apiSendMessage } from "@/lib/api";
+import { getObjectUrl } from "@/lib/storage";
 
 interface BubbleGroup {
   date: string;
@@ -122,7 +124,11 @@ export default function ChatScreen() {
           <View key={msg.id} style={[styles.msgRow, mine ? styles.msgRight : styles.msgLeft]}>
             {!mine && (
               <View style={[styles.avatarSmall, { backgroundColor: colors.primaryLight }]}>
-                <Text style={[styles.avatarSmallText, { color: colors.primary }]}>{msg.senderName[0]?.toUpperCase()}</Text>
+                {msg.senderAvatar ? (
+                  <Image source={{ uri: getObjectUrl(msg.senderAvatar) }} style={styles.avatarSmallImg} />
+                ) : (
+                  <Text style={[styles.avatarSmallText, { color: colors.primary }]}>{msg.senderName[0]?.toUpperCase()}</Text>
+                )}
               </View>
             )}
             <View style={[styles.bubble, mine ? { backgroundColor: colors.primary } : { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
@@ -230,7 +236,8 @@ const styles = StyleSheet.create({
   msgRow: { flexDirection: "row", alignItems: "flex-end", marginBottom: 10, maxWidth: "85%" },
   msgLeft: { alignSelf: "flex-start" },
   msgRight: { alignSelf: "flex-end", flexDirection: "row-reverse" },
-  avatarSmall: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", marginRight: 6 },
+  avatarSmall: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", marginRight: 6, overflow: "hidden" },
+  avatarSmallImg: { width: 28, height: 28, borderRadius: 14 },
   avatarSmallText: { fontSize: 12, fontFamily: "Inter_700Bold" },
   bubble: { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, maxWidth: "100%" },
   senderName: { fontSize: 11, fontFamily: "Inter_600SemiBold", marginBottom: 2 },

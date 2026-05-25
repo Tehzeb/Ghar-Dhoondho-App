@@ -1,10 +1,12 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { getObjectUrl, uploadFile } from "@/lib/storage";
 
 const ROLES: { value: UserRole; label: string; icon: string }[] = [
   { value: "buyer", label: "Buyer", icon: "shopping-bag" },
@@ -32,8 +35,40 @@ export default function EditProfileScreen() {
   const [name, setName] = useState(user?.name ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [role, setRole] = useState<UserRole>(user?.role ?? "buyer");
+  const [avatar, setAvatar] = useState(user?.avatar ?? "");
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Please allow photo access to upload a profile picture.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+
+    const asset = result.assets[0];
+    const ext = asset.mimeType?.split("/")[1] ?? "jpg";
+    const filename = `avatar.${ext}`;
+
+    setUploading(true);
+    try {
+      const objectPath = await uploadFile(asset.uri, filename, asset.mimeType ?? "image/jpeg");
+      setAvatar(objectPath);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      Alert.alert("Upload Error", msg);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const save = async () => {
     if (!name.trim()) {
@@ -42,7 +77,7 @@ export default function EditProfileScreen() {
     }
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await updateUser({ name: name.trim(), phone: phone.trim(), role });
+    await updateUser({ name: name.trim(), phone: phone.trim(), role, avatar });
     setLoading(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("Saved", "Your profile has been updated.", [{ text: "OK", onPress: () => router.back() }]);
@@ -56,7 +91,7 @@ export default function EditProfileScreen() {
             <Feather name="arrow-left" size={22} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>Edit Profile</Text>
-          <TouchableOpacity onPress={save} disabled={loading}>
+          <TouchableOpacity onPress={save} disabled={loading || uploading}>
             {loading ? <ActivityIndicator size="small" color={colors.primary} /> : (
               <Text style={[styles.saveText, { color: colors.primary }]}>Save</Text>
             )}
@@ -66,9 +101,27 @@ export default function EditProfileScreen() {
         <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40 }]} keyboardShouldPersistTaps="handled">
           <View style={[styles.avatarArea, { backgroundColor: colors.primaryLight }]}>
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-              <Text style={styles.avatarText}>{name?.[0]?.toUpperCase() ?? "?"}</Text>
+              {avatar ? (
+                <Image source={{ uri: getObjectUrl(avatar) }} style={styles.avatarImg} />
+              ) : (
+                <Text style={styles.avatarText}>{name?.[0]?.toUpperCase() ?? "?"}</Text>
+              )}
             </View>
-            <Text style={[styles.avatarName, { color: colors.primary }]}>{name || "Your Name"}</Text>
+            <TouchableOpacity
+              style={[styles.uploadBtn, { backgroundColor: colors.card, borderColor: colors.primary }]}
+              onPress={pickImage}
+              disabled={uploading}
+              activeOpacity={0.85}
+            >
+              {uploading ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <>
+                  <Feather name="camera" size={14} color={colors.primary} />
+                  <Text style={[styles.uploadBtnText, { color: colors.primary }]}>Change Photo</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
 
           <View style={styles.field}>
@@ -131,9 +184,9 @@ export default function EditProfileScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.saveBtn, { backgroundColor: colors.primary }, loading && { opacity: 0.7 }]}
+            style={[styles.saveBtn, { backgroundColor: colors.primary }, (loading || uploading) && { opacity: 0.7 }]}
             onPress={save}
-            disabled={loading}
+            disabled={loading || uploading}
             activeOpacity={0.85}
           >
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
@@ -150,9 +203,12 @@ const styles = StyleSheet.create({
   saveText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
   body: { padding: 20 },
   avatarArea: { alignItems: "center", borderRadius: 20, padding: 24, marginBottom: 24 },
-  avatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", marginBottom: 10 },
-  avatarText: { fontSize: 32, fontFamily: "Inter_700Bold", color: "#fff" },
+  avatar: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 10, overflow: "hidden" },
+  avatarImg: { width: 80, height: 80, borderRadius: 40 },
+  avatarText: { fontSize: 34, fontFamily: "Inter_700Bold", color: "#fff" },
   avatarName: { fontSize: 18, fontFamily: "Inter_600SemiBold" },
+  uploadBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  uploadBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   field: { marginBottom: 18 },
   label: { fontSize: 14, fontFamily: "Inter_600SemiBold", marginBottom: 8 },
   inputWrap: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14 },

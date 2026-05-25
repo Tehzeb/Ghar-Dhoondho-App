@@ -90,6 +90,7 @@ export default function PostScreen() {
       size: size.trim(),
       ownerId: user.id,
       ownerName: user.name,
+      ownerAvatar: user.avatar ?? "",
       ownerPhone: user.phone,
       featured: false,
     });

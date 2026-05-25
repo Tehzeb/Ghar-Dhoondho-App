@@ -32,6 +32,7 @@ function apiToLocalProperty(p: Record<string, unknown>): Property {
     size: String(p.area_size ?? p.areaSize ?? ""),
     ownerId: String(p.seller_id ?? p.sellerId ?? ""),
     ownerName: String(p.owner_name ?? p.ownerName ?? ""),
+    ownerAvatar: String(p.owner_avatar ?? p.ownerAvatar ?? ""),
     ownerPhone: String(p.owner_phone ?? p.ownerPhone ?? ""),
     createdAt: String(p.created_at ?? p.createdAt ?? new Date().toISOString()),
     featured: Boolean(p.featured),

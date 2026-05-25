@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import {
   Alert,
   FlatList,
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useProperties } from "@/context/PropertiesContext";
 import { useColors } from "@/hooks/useColors";
+import { getObjectUrl } from "@/lib/storage";
 
 type Tab = "users" | "transactions";
 
@@ -108,9 +110,13 @@ export default function AdminDashboard() {
           renderItem={({ item }) => (
             <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={[styles.userAvatar, { backgroundColor: (ROLE_COLORS[item.role] ?? colors.primary) + "20" }]}>
-                <Text style={[styles.userAvatarText, { color: ROLE_COLORS[item.role] ?? colors.primary }]}>
-                  {item.name?.[0]?.toUpperCase() ?? "?"}
-                </Text>
+                {(item as any).avatar ? (
+                  <Image source={{ uri: getObjectUrl((item as any).avatar) }} style={styles.userAvatarImg} />
+                ) : (
+                  <Text style={[styles.userAvatarText, { color: ROLE_COLORS[item.role] ?? colors.primary }]}>
+                    {item.name?.[0]?.toUpperCase() ?? "?"}
+                  </Text>
+                )}
               </View>
               <View style={styles.userInfo}>
                 <Text style={[styles.userName, { color: colors.text }]}>{item.name}</Text>
@@ -209,7 +215,8 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 12,
     borderRadius: 14, padding: 14, borderWidth: 1, marginBottom: 10,
   },
-  userAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  userAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  userAvatarImg: { width: 44, height: 44, borderRadius: 22 },
   userAvatarText: { fontSize: 20, fontFamily: "Inter_700Bold" },
   userInfo: { flex: 1 },
   userName: { fontSize: 15, fontFamily: "Inter_600SemiBold" },

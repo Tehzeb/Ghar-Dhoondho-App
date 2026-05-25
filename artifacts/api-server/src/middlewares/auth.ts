@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: string;
+  avatar?: string;
 }
 
 declare global {

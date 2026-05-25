@@ -25,6 +25,7 @@ router.get("/messages", requireAuth, async (req, res) => {
     `SELECT
       m.id, m.property_id, m.sender_id, m.receiver_id, m.content, m.created_at,
       su.name AS sender_name,
+      su.profile_pic_url AS sender_avatar,
       ru.name AS receiver_name
     FROM messages m
     JOIN users su ON su.id = m.sender_id
@@ -42,6 +43,7 @@ router.get("/messages", requireAuth, async (req, res) => {
       propertyId: r.property_id,
       senderId: r.sender_id,
       senderName: r.sender_name,
+      senderAvatar: r.sender_avatar ?? "",
       receiverId: r.receiver_id,
       receiverName: r.receiver_name,
       content: r.content,
@@ -89,6 +91,7 @@ router.post("/messages", requireAuth, async (req, res) => {
       propertyId,
       senderId,
       senderName: req.user!.name,
+      senderAvatar: req.user?.avatar ?? "",
       receiverId,
       receiverName,
       content,
@@ -107,6 +110,7 @@ router.get("/messages/conversations", requireAuth, async (req, res) => {
       p.title AS property_title,
       p.city AS property_city,
       u.name AS other_party_name,
+      u.profile_pic_url AS other_party_avatar,
       m.content AS last_message,
       m.created_at AS last_message_at
     FROM messages m
@@ -125,6 +129,7 @@ router.get("/messages/conversations", requireAuth, async (req, res) => {
       propertyCity: r.property_city,
       otherPartyId: r.other_party,
       otherPartyName: r.other_party_name,
+      otherPartyAvatar: r.other_party_avatar ?? "",
       lastMessage: r.last_message,
       lastMessageAt: r.last_message_at,
     })),

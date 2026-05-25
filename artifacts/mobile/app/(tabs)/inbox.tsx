@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
+  Image,
   Platform,
   RefreshControl,
   StyleSheet,
@@ -15,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { type ApiConversation, apiGetConversations } from "@/lib/api";
+import { getObjectUrl } from "@/lib/storage";
 
 export default function InboxScreen() {
   const colors = useColors();
@@ -94,7 +96,11 @@ export default function InboxScreen() {
             activeOpacity={0.8}
           >
             <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.avatarText, { color: colors.primary }]}>{item.otherPartyName[0]?.toUpperCase()}</Text>
+              {item.otherPartyAvatar ? (
+                <Image source={{ uri: getObjectUrl(item.otherPartyAvatar) }} style={styles.avatarImg} />
+              ) : (
+                <Text style={[styles.avatarText, { color: colors.primary }]}>{item.otherPartyName[0]?.toUpperCase()}</Text>
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <View style={styles.rowTop}>
@@ -130,7 +136,8 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 12,
     paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1,
   },
-  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  avatarImg: { width: 48, height: 48, borderRadius: 24 },
   avatarText: { fontSize: 20, fontFamily: "Inter_700Bold" },
   rowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 },
   name: { fontSize: 15, fontFamily: "Inter_600SemiBold" },

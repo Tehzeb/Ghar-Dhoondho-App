@@ -21,6 +21,7 @@ export interface User {
   password: string;
   role: UserRole;
   phone: string;
+  avatar: string;
   createdAt: string;
 }
 
@@ -48,6 +49,7 @@ function apiUserToLocal(u: ApiUser): User {
     password: "",
     role: u.role as UserRole,
     phone: u.phone ?? "",
+    avatar: u.avatar ?? "",
     createdAt: new Date().toISOString(),
   };
 }
@@ -145,6 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password: "",
         role: u.role as UserRole,
         phone: u.phone ?? "",
+        avatar: (u as any).avatar ?? "",
         createdAt: u.createdAt,
       }));
       setAllUsers(users);

@@ -47,6 +47,7 @@ export interface ApiUser {
   email: string;
   phone: string;
   role: "buyer" | "seller" | "renter" | "admin";
+  avatar: string;
 }
 
 interface AuthResponse { token: string; user: ApiUser }
@@ -63,8 +64,18 @@ export async function apiGetMe(): Promise<{ user: ApiUser }> {
   return request("/auth/me");
 }
 
-export async function apiUpdateMe(updates: Partial<Pick<ApiUser, "name" | "phone" | "role">>): Promise<{ user: ApiUser }> {
+export async function apiUpdateMe(updates: Partial<Pick<ApiUser, "name" | "phone" | "role" | "avatar">>): Promise<{ user: ApiUser }> {
   return request("/auth/me", { method: "PUT", body: JSON.stringify(updates) });
+}
+
+export async function apiGetUploadUrl(
+  filename: string,
+  contentType: string,
+): Promise<{ presignedUrl: string; objectPath: string }> {
+  return request("/storage/uploads/request-url", {
+    method: "POST",
+    body: JSON.stringify({ filename, contentType }),
+  });
 }
 
 // ─── Properties ─────────────────────────────────────────────────────────────────
@@ -86,6 +97,7 @@ export interface ApiProperty {
   featured: boolean;
   ownerName: string;
   ownerPhone: string;
+  ownerAvatar: string;
   images: string[];
   createdAt: string;
 }
@@ -194,6 +206,7 @@ export interface ApiMessage {
   propertyId: string;
   senderId: string;
   senderName: string;
+  senderAvatar: string;
   receiverId: string;
   receiverName: string;
   content: string;
@@ -206,6 +219,7 @@ export interface ApiConversation {
   propertyCity: string;
   otherPartyId: string;
   otherPartyName: string;
+  otherPartyAvatar: string;
   lastMessage: string;
   lastMessageAt: string;
 }

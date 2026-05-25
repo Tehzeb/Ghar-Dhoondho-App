@@ -42,11 +42,13 @@ router.get("/properties", async (req, res) => {
       p.price, p.area_size, p.bedrooms, p.bathrooms, p.city, p.area,
       p.latitude, p.longitude, p.status, p.featured, p.owner_name, p.owner_phone,
       p.created_at, p.updated_at,
-      COALESCE(json_agg(pi.image_url) FILTER (WHERE pi.image_url IS NOT NULL), '[]') AS images
+      COALESCE(json_agg(pi.image_url) FILTER (WHERE pi.image_url IS NOT NULL), '[]') AS images,
+      u.profile_pic_url AS owner_avatar
     FROM properties p
     LEFT JOIN property_images pi ON pi.property_id = p.id
+    LEFT JOIN users u ON u.id = p.seller_id
     WHERE ${conditions.join(" AND ")}
-    GROUP BY p.id
+    GROUP BY p.id, u.profile_pic_url
     ORDER BY p.featured DESC, p.created_at DESC
     LIMIT $${idx++} OFFSET $${idx++}
   `;
@@ -64,11 +66,13 @@ router.get("/properties/:id", async (req, res) => {
       p.latitude, p.longitude, p.status, p.featured, p.owner_name, p.owner_phone,
       p.created_at, p.updated_at,
       COALESCE(json_agg(pi.image_url ORDER BY pi.is_thumbnail DESC, pi.created_at)
-        FILTER (WHERE pi.image_url IS NOT NULL), '[]') AS images
+        FILTER (WHERE pi.image_url IS NOT NULL), '[]') AS images,
+      u.profile_pic_url AS owner_avatar
     FROM properties p
     LEFT JOIN property_images pi ON pi.property_id = p.id
+    LEFT JOIN users u ON u.id = p.seller_id
     WHERE p.id = $1
-    GROUP BY p.id
+    GROUP BY p.id, u.profile_pic_url
   `;
   const result = await pool.query(sql, [req.params.id]);
   if (result.rows.length === 0) {
@@ -106,14 +110,17 @@ router.post("/properties", requireAuth, async (req, res) => {
 
   let ownerName = user.name;
   let ownerPhone = "";
+  let ownerAvatar = user.avatar ?? "";
   let sellerId: string | null = user.id;
 
   if (user.id === "admin") {
     sellerId = null;
     ownerName = "GharDhoondo";
+    ownerAvatar = "";
   } else {
-    const userResult = await pool.query("SELECT phone FROM users WHERE id = $1", [user.id]);
+    const userResult = await pool.query("SELECT phone, profile_pic_url FROM users WHERE id = $1", [user.id]);
     ownerPhone = userResult.rows[0]?.phone ?? "";
+    ownerAvatar = userResult.rows[0]?.profile_pic_url ?? "";
   }
 
   const [property] = await db
@@ -144,7 +151,7 @@ router.post("/properties", requireAuth, async (req, res) => {
     );
   }
 
-  res.status(201).json({ property: { ...property, images } });
+  res.status(201).json({ property: { ...property, images, ownerAvatar } });
 });
 
 router.put("/properties/:id/status", requireAuth, async (req, res) => {
@@ -202,6 +209,7 @@ function normalizeProperty(row: Record<string, unknown>) {
     featured: row.featured,
     ownerName: row.owner_name,
     ownerPhone: row.owner_phone,
+    ownerAvatar: row.owner_avatar ?? "",
     images: Array.isArray(row.images) ? row.images : [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,

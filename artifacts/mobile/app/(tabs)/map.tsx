@@ -175,7 +175,6 @@ export default function MapScreen() {
                   <SvgText
                     x={x} y={y + 1}
                     textAnchor="middle"
-                    dominantBaseline="middle"
                     fontSize={r > 14 ? 11 : 9}
                     fontWeight="700"
                     fill="#fff"

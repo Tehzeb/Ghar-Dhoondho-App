@@ -2,12 +2,13 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React from "react";
-import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
 import { useFavourites } from "@/context/FavouritesContext";
 import { useColors } from "@/hooks/useColors";
+import { getObjectUrl } from "@/lib/storage";
 
 const ROLE_COLORS: Record<string, string> = {
   buyer: "#3B82F6",
@@ -71,7 +72,11 @@ export default function ProfileScreen() {
     >
       <View style={[styles.hero, { paddingTop: topPad + 20, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={[styles.avatarCircle, { backgroundColor: colors.primaryLight }]}>
-          <Text style={[styles.avatarText, { color: colors.primary }]}>{user.name?.[0]?.toUpperCase() ?? "U"}</Text>
+          {user.avatar ? (
+            <Image source={{ uri: getObjectUrl(user.avatar) }} style={styles.avatarImage} />
+          ) : (
+            <Text style={[styles.avatarText, { color: colors.primary }]}>{user.name?.[0]?.toUpperCase() ?? "U"}</Text>
+          )}
         </View>
         <Text style={[styles.name, { color: colors.text }]}>{user.name}</Text>
         <Text style={[styles.email, { color: colors.mutedForeground }]}>{user.email}</Text>
@@ -120,7 +125,8 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   hero: { alignItems: "center", paddingHorizontal: 20, paddingBottom: 24, borderBottomWidth: 1, marginBottom: 16 },
-  avatarCircle: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  avatarCircle: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 12, overflow: "hidden" },
+  avatarImage: { width: 80, height: 80, borderRadius: 40 },
   avatarText: { fontSize: 34, fontFamily: "Inter_700Bold" },
   name: { fontSize: 22, fontFamily: "Inter_700Bold", marginBottom: 2 },
   email: { fontSize: 14, fontFamily: "Inter_400Regular", marginBottom: 2 },

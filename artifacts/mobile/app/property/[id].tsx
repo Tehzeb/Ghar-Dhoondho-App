@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useProperties } from "@/context/PropertiesContext";
 import { useColors } from "@/hooks/useColors";
+import { getObjectUrl } from "@/lib/storage";
 
 const { width } = Dimensions.get("window");
 
@@ -286,7 +287,11 @@ export default function PropertyDetailScreen() {
 
           <View style={[styles.ownerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.ownerAvatar, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.ownerAvatarText, { color: colors.primary }]}>{property.ownerName?.[0]?.toUpperCase() ?? "O"}</Text>
+              {property.ownerAvatar ? (
+                <Image source={{ uri: getObjectUrl(property.ownerAvatar) }} style={styles.ownerAvatarImg} />
+              ) : (
+                <Text style={[styles.ownerAvatarText, { color: colors.primary }]}>{property.ownerName?.[0]?.toUpperCase() ?? "O"}</Text>
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.ownerLabel, { color: colors.mutedForeground }]}>Listed by</Text>
@@ -367,7 +372,8 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", marginBottom: 8 },
   desc: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 22 },
   ownerCard: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 14, borderWidth: 1, padding: 14 },
-  ownerAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  ownerAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  ownerAvatarImg: { width: 48, height: 48, borderRadius: 24 },
   ownerAvatarText: { fontSize: 22, fontFamily: "Inter_700Bold" },
   ownerLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase" },
   ownerName: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
