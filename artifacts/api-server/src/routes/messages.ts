@@ -80,6 +80,9 @@ router.post("/messages", requireAuth, async (req, res) => {
     [propertyId, senderId, receiverId, content]
   );
 
+  const receiverRow = await pool.query("SELECT name FROM users WHERE id = $1", [receiverId]);
+  const receiverName = receiverRow.rows[0]?.name ?? "";
+
   res.status(201).json({
     message: {
       id: result.rows[0].id,
@@ -87,7 +90,7 @@ router.post("/messages", requireAuth, async (req, res) => {
       senderId,
       senderName: req.user!.name,
       receiverId,
-      receiverName: "",
+      receiverName,
       content,
       createdAt: result.rows[0].created_at,
     },

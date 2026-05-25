@@ -58,6 +58,7 @@ export default function PropertyDetailScreen() {
 
   const property = properties.find((p) => p.id === id);
   const isOwner = user?.id === property?.ownerId;
+  const canMessage = !!property?.ownerId && property.ownerId.trim().length > 0;
 
   if (!property) {
     return (
@@ -100,7 +101,11 @@ export default function PropertyDetailScreen() {
         Alert.alert("No Phone", "The owner has not added a phone number.");
         return;
       }
-      await Linking.openURL(`tel:${phone}`);
+      try {
+        await Linking.openURL(`tel:${phone}`);
+      } catch {
+        Alert.alert("Error", "Unable to open phone dialer.");
+      }
     });
   };
 
@@ -112,21 +117,31 @@ export default function PropertyDetailScreen() {
         return;
       }
       const url = `https://wa.me/${phone}?text=${whatsappMessage(property.title)}`;
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert("Open WhatsApp", url, [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open", onPress: () => Linking.openURL(url) },
-        ]);
+      try {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          Alert.alert("Open WhatsApp", "Copy this link to open WhatsApp manually:", [
+            { text: "Cancel", style: "cancel" },
+            { text: "Copy Link", onPress: () => { /* clipboard not available in RN web easily */ } },
+          ]);
+        }
+      } catch {
+        Alert.alert("WhatsApp", "Unable to open WhatsApp. Please try calling instead.");
       }
     });
   };
 
   const handleMessage = () => {
     requireLogin("send a message", () => {
-      router.push(`/chat/${property.id}?receiverId=${property.ownerId}&receiverName=${encodeURIComponent(property.ownerName)}`);
+      if (!canMessage) {
+        Alert.alert("No Chat Available", "This property owner hasn't registered for in-app messaging. Use WhatsApp or Call instead.");
+        return;
+      }
+      router.push(
+        `/chat/${property.id}?receiverId=${property.ownerId}&receiverName=${encodeURIComponent(property.ownerName)}&propertyTitle=${encodeURIComponent(property.title)}`
+      );
     });
   };
 
@@ -299,11 +314,12 @@ export default function PropertyDetailScreen() {
       {!isOwner && (
         <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background, paddingBottom: insets.bottom + 12 }]}>
           <TouchableOpacity
-            style={[styles.msgBtn, { backgroundColor: colors.primaryLight }]}
+            style={[styles.msgBtn, { backgroundColor: canMessage ? colors.primaryLight : colors.muted, opacity: canMessage ? 1 : 0.5 }]}
             onPress={handleMessage}
             activeOpacity={0.85}
+            disabled={!canMessage}
           >
-            <Feather name="message-circle" size={18} color={colors.primary} />
+            <Feather name="message-circle" size={18} color={canMessage ? colors.primary : colors.mutedForeground} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.callBtn, { backgroundColor: "#22C55E" }]}

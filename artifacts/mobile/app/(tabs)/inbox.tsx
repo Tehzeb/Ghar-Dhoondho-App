@@ -88,7 +88,7 @@ export default function InboxScreen() {
             style={[styles.row, { borderBottomColor: colors.border }]}
             onPress={() =>
               router.push(
-                `/chat/${item.propertyId}?receiverId=${item.otherPartyId}&receiverName=${encodeURIComponent(item.otherPartyName)}`
+                `/chat/${item.propertyId}?receiverId=${item.otherPartyId}&receiverName=${encodeURIComponent(item.otherPartyName)}&propertyTitle=${encodeURIComponent(item.propertyTitle)}`
               )
             }
             activeOpacity={0.8}
