@@ -6,6 +6,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -29,6 +30,22 @@ function formatPrice(price: number, listingType: string) {
   if (price >= 10000000) return `PKR ${(price / 10000000).toFixed(1)} Crore`;
   if (price >= 100000) return `PKR ${(price / 100000).toFixed(1)} Lakh`;
   return `PKR ${price.toLocaleString()}`;
+}
+
+function sanitizePhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 0) return "";
+  if (digits.startsWith("92")) return "+" + digits;
+  if (digits.startsWith("0")) return "+92" + digits.slice(1);
+  if (digits.startsWith("3") && digits.length === 10) return "+92" + digits;
+  if (digits.startsWith("3") && digits.length === 11) return "+" + digits;
+  return "+92" + digits;
+}
+
+function whatsappMessage(propertyTitle: string) {
+  return encodeURIComponent(
+    `Hi! I'm interested in your listing "${propertyTitle}" on GharDhoondo. Could you share more details?`
+  );
 }
 
 export default function PropertyDetailScreen() {
@@ -55,37 +72,89 @@ export default function PropertyDetailScreen() {
   }
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const phone = sanitizePhone(property.ownerPhone ?? "");
 
-  const handleContact = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      "Contact Owner",
-      `${property.ownerName}\n${property.ownerPhone || "No phone available"}`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: property.listingType === "sale" ? "Mark as Sold" : "Mark as Rented",
-          onPress: () => {
-            if (!user) return;
-            addTransaction({
-              propertyId: property.id,
-              propertyTitle: property.title,
-              propertyCity: property.city,
-              propertyType: property.type,
-              transactionType: property.listingType === "sale" ? "sale" : "rent",
-              buyerOrRenterId: user.id,
-              buyerOrRenterName: user.name,
-              buyerOrRenterEmail: user.email,
-              sellerOrOwnerId: property.ownerId,
-              sellerOrOwnerName: property.ownerName,
-              sellerOrOwnerEmail: "",
-              amount: property.price,
-            });
-            Alert.alert("Success", "Transaction recorded! The admin will be notified.");
+  const requireLogin = (action: string, callback: () => void) => {
+    if (!user) {
+      Alert.alert(
+        "Sign In Required",
+        `You need a GharDhoondo account to ${action} the owner.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign In",
+            style: "default",
+            onPress: () => router.push("/auth/login"),
           },
-        },
-      ]
-    );
+        ]
+      );
+      return;
+    }
+    callback();
+  };
+
+  const handleCall = () => {
+    requireLogin("call", async () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (!phone) {
+        Alert.alert("No Phone", "The owner has not added a phone number.");
+        return;
+      }
+      await Linking.openURL(`tel:${phone}`);
+    });
+  };
+
+  const handleWhatsApp = () => {
+    requireLogin("message", async () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (!phone) {
+        Alert.alert("No WhatsApp", "The owner has not added a phone number.");
+        return;
+      }
+      const url = `https://wa.me/${phone}?text=${whatsappMessage(property.title)}`;
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert("Open WhatsApp", url, [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open", onPress: () => Linking.openURL(url) },
+        ]);
+      }
+    });
+  };
+
+  const handleMarkComplete = () => {
+    requireLogin("record a transaction", () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Alert.alert(
+        "Mark as Complete",
+        `Did you successfully ${property.listingType === "sale" ? "buy" : "rent"} this property?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: property.listingType === "sale" ? "Mark as Sold" : "Mark as Rented",
+            onPress: () => {
+              addTransaction({
+                propertyId: property.id,
+                propertyTitle: property.title,
+                propertyCity: property.city,
+                propertyType: property.type,
+                transactionType: property.listingType === "sale" ? "sale" : "rent",
+                buyerOrRenterId: user!.id,
+                buyerOrRenterName: user!.name,
+                buyerOrRenterEmail: user!.email,
+                sellerOrOwnerId: property.ownerId,
+                sellerOrOwnerName: property.ownerName,
+                sellerOrOwnerEmail: "",
+                amount: property.price,
+              });
+              Alert.alert("Success", "Transaction recorded! The admin will be notified.");
+            },
+          },
+        ]
+      );
+    });
   };
 
   const handleDelete = () => {
@@ -121,7 +190,7 @@ export default function PropertyDetailScreen() {
         )}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         <View style={styles.imageSection}>
           {property.images && property.images.length > 0 ? (
             <>
@@ -201,23 +270,43 @@ export default function PropertyDetailScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[styles.ownerLabel, { color: colors.mutedForeground }]}>Listed by</Text>
               <Text style={[styles.ownerName, { color: colors.text }]}>{property.ownerName}</Text>
-              {property.ownerPhone ? <Text style={[styles.ownerPhone, { color: colors.mutedForeground }]}>{property.ownerPhone}</Text> : null}
+              {property.ownerPhone ? (
+                <Text style={[styles.ownerPhone, { color: colors.mutedForeground }]}>{property.ownerPhone}</Text>
+              ) : null}
             </View>
           </View>
+
+          {!isOwner && (
+            <TouchableOpacity
+              onPress={handleMarkComplete}
+              style={{ marginTop: 12, alignSelf: "flex-start" }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: colors.primary, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                {property.listingType === "sale" ? "Mark as Sold" : "Mark as Rented"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 
       {!isOwner && (
         <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background, paddingBottom: insets.bottom + 12 }]}>
           <TouchableOpacity
-            style={[styles.contactBtn, { backgroundColor: colors.primary }]}
-            onPress={handleContact}
+            style={[styles.callBtn, { backgroundColor: "#22C55E" }]}
+            onPress={handleWhatsApp}
+            activeOpacity={0.85}
+          >
+            <Feather name="message-circle" size={18} color="#fff" />
+            <Text style={styles.callBtnText}>WhatsApp</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.callBtn, { backgroundColor: colors.primary }]}
+            onPress={handleCall}
             activeOpacity={0.85}
           >
             <Feather name="phone" size={18} color="#fff" />
-            <Text style={styles.contactBtnText}>
-              {property.listingType === "sale" ? "Contact Seller" : "Contact Owner"}
-            </Text>
+            <Text style={styles.callBtnText}>Call</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -257,8 +346,8 @@ const styles = StyleSheet.create({
   ownerLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase" },
   ownerName: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
   ownerPhone: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 16, borderTopWidth: 1 },
-  contactBtn: { borderRadius: 14, paddingVertical: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
-  contactBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 16, borderTopWidth: 1, flexDirection: "row", gap: 12 },
+  callBtn: { flex: 1, borderRadius: 14, paddingVertical: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  callBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
   notFound: { fontSize: 18, fontFamily: "Inter_700Bold", marginVertical: 12 },
 });

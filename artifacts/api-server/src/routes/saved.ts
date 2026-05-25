@@ -73,9 +73,9 @@ router.post("/transactions", requireAuth, async (req, res) => {
        party_second_id, party_second_name, party_second_email)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
      RETURNING id`,
-    [propertyId ?? null, propertyTitle, propertyCity, propertyType,
+    [propertyId || null, propertyTitle, propertyCity, propertyType,
      transactionType === "sale" ? "sale" : "rent_lease", amountTransacted,
-     sellerOrOwnerId ?? null, sellerOrOwnerName, sellerOrOwnerEmail,
+     sellerOrOwnerId || null, sellerOrOwnerName, sellerOrOwnerEmail,
      user.id === "admin" ? null : user.id, user.name, user.email]
   );
   res.status(201).json({ success: true, id: result.rows[0].id });
