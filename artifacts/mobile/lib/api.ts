@@ -67,7 +67,7 @@ export async function apiUpdateMe(updates: Partial<Pick<ApiUser, "name" | "phone
   return request("/auth/me", { method: "PUT", body: JSON.stringify(updates) });
 }
 
-// ─── Properties ──────────────────────────────────────────────────────────────
+// ─── Properties ─────────────────────────────────────────────────────────────────
 
 export interface ApiProperty {
   id: string;
@@ -136,6 +136,10 @@ export async function apiDeleteProperty(id: string): Promise<void> {
   return request(`/properties/${id}`, { method: "DELETE" });
 }
 
+export async function apiUpdatePropertyStatus(id: string, status: "available" | "sold" | "rented"): Promise<{ success: boolean; status: string }> {
+  return request(`/properties/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) });
+}
+
 // ─── Saved Properties ─────────────────────────────────────────────────────────
 
 export async function apiGetSaved(): Promise<{ properties: ApiProperty[] }> {
@@ -181,4 +185,39 @@ export interface AdminDashboard {
 
 export async function apiGetAdminDashboard(): Promise<AdminDashboard> {
   return request("/admin/dashboard");
+}
+
+// ─── Messages ──────────────────────────────────────────────────────────────
+
+export interface ApiMessage {
+  id: string;
+  propertyId: string;
+  senderId: string;
+  senderName: string;
+  receiverId: string;
+  receiverName: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface ApiConversation {
+  propertyId: string;
+  propertyTitle: string;
+  propertyCity: string;
+  otherPartyId: string;
+  otherPartyName: string;
+  lastMessage: string;
+  lastMessageAt: string;
+}
+
+export async function apiGetMessages(propertyId: string): Promise<{ messages: ApiMessage[] }> {
+  return request(`/messages?propertyId=${encodeURIComponent(propertyId)}`);
+}
+
+export async function apiSendMessage(propertyId: string, receiverId: string, content: string): Promise<{ message: ApiMessage }> {
+  return request("/messages", { method: "POST", body: JSON.stringify({ propertyId, receiverId, content }) });
+}
+
+export async function apiGetConversations(): Promise<{ conversations: ApiConversation[] }> {
+  return request("/messages/conversations");
 }

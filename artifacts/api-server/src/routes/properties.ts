@@ -147,6 +147,26 @@ router.post("/properties", requireAuth, async (req, res) => {
   res.status(201).json({ property: { ...property, images } });
 });
 
+router.put("/properties/:id/status", requireAuth, async (req, res) => {
+  const propertyId = String(req.params.id);
+  const status = req.body.status;
+  if (!["available", "sold", "rented"].includes(status)) {
+    res.status(400).json({ error: "Invalid status" });
+    return;
+  }
+  const [property] = await db.select().from(propertiesTable).where(eq(propertiesTable.id, propertyId)).limit(1);
+  if (!property) {
+    res.status(404).json({ error: "Property not found" });
+    return;
+  }
+  if (property.sellerId !== req.user!.id && req.user!.role !== "admin") {
+    res.status(403).json({ error: "Only the seller or admin can change status" });
+    return;
+  }
+  await db.update(propertiesTable).set({ status }).where(eq(propertiesTable.id, propertyId));
+  res.json({ success: true, status });
+});
+
 router.delete("/properties/:id", requireAuth, async (req, res) => {
   const propertyId = String(req.params.id);
   const [property] = await db.select().from(propertiesTable).where(eq(propertiesTable.id, propertyId)).limit(1);

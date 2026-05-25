@@ -78,7 +78,7 @@ export default function PropertyDetailScreen() {
     if (!user) {
       Alert.alert(
         "Sign In Required",
-        `You need a GharDhoondo account to ${action} the owner.`,
+        `You need a GharDhoondo account to ${action}.`,
         [
           { text: "Cancel", style: "cancel" },
           {
@@ -94,7 +94,7 @@ export default function PropertyDetailScreen() {
   };
 
   const handleCall = () => {
-    requireLogin("call", async () => {
+    requireLogin("call the owner", async () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       if (!phone) {
         Alert.alert("No Phone", "The owner has not added a phone number.");
@@ -105,7 +105,7 @@ export default function PropertyDetailScreen() {
   };
 
   const handleWhatsApp = () => {
-    requireLogin("message", async () => {
+    requireLogin("message the owner on WhatsApp", async () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       if (!phone) {
         Alert.alert("No WhatsApp", "The owner has not added a phone number.");
@@ -124,12 +124,18 @@ export default function PropertyDetailScreen() {
     });
   };
 
+  const handleMessage = () => {
+    requireLogin("send a message", () => {
+      router.push(`/chat/${property.id}?receiverId=${property.ownerId}&receiverName=${encodeURIComponent(property.ownerName)}`);
+    });
+  };
+
   const handleMarkComplete = () => {
-    requireLogin("record a transaction", () => {
+    requireLogin("update the status", () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       Alert.alert(
-        "Mark as Complete",
-        `Did you successfully ${property.listingType === "sale" ? "buy" : "rent"} this property?`,
+        "Update Status",
+        `Change this property to ${property.listingType === "sale" ? "Sold" : "Rented"}? Only the owner or admin can do this.`,
         [
           { text: "Cancel", style: "cancel" },
           {
@@ -276,7 +282,7 @@ export default function PropertyDetailScreen() {
             </View>
           </View>
 
-          {!isOwner && (
+          {isOwner && (
             <TouchableOpacity
               onPress={handleMarkComplete}
               style={{ marginTop: 12, alignSelf: "flex-start" }}
@@ -293,11 +299,18 @@ export default function PropertyDetailScreen() {
       {!isOwner && (
         <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background, paddingBottom: insets.bottom + 12 }]}>
           <TouchableOpacity
+            style={[styles.msgBtn, { backgroundColor: colors.primaryLight }]}
+            onPress={handleMessage}
+            activeOpacity={0.85}
+          >
+            <Feather name="message-circle" size={18} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.callBtn, { backgroundColor: "#22C55E" }]}
             onPress={handleWhatsApp}
             activeOpacity={0.85}
           >
-            <Feather name="message-circle" size={18} color="#fff" />
+            <Feather name="message-square" size={18} color="#fff" />
             <Text style={styles.callBtnText}>WhatsApp</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -346,7 +359,8 @@ const styles = StyleSheet.create({
   ownerLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase" },
   ownerName: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
   ownerPhone: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 16, borderTopWidth: 1, flexDirection: "row", gap: 12 },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 16, borderTopWidth: 1, flexDirection: "row", gap: 10 },
+  msgBtn: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   callBtn: { flex: 1, borderRadius: 14, paddingVertical: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
   callBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
   notFound: { fontSize: 18, fontFamily: "Inter_700Bold", marginVertical: 12 },
